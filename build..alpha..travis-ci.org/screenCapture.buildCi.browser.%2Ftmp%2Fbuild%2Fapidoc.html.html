@@ -1,0 +1,183 @@
+<html><head></head><body><div class="apidocDiv">
+<style>
+/*csslint
+*/
+.apidocDiv {
+    background: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+}
+.apidocDiv a[href] {
+    color: #33f;
+    font-weight: bold;
+    text-decoration: none;
+}
+.apidocDiv a[href]:hover {
+    text-decoration: underline;
+}
+.apidocCodeCommentSpan {
+    background: #bbf;
+    color: #000;
+    display: block;
+}
+.apidocCodeKeywordSpan {
+    color: #d00;
+    font-weight: bold;
+}
+.apidocCodePre {
+    background: #eef;
+    border: 1px solid;
+    color: #777;
+    padding: 5px;
+    white-space: pre-wrap;
+}
+.apidocFooterDiv {
+    margin-top: 20px;
+    text-align: center;
+}
+.apidocModuleLi {
+    margin-top: 10px;
+}
+.apidocSectionDiv {
+    border-top: 1px solid;
+    margin-top: 20px;
+}
+.apidocSignatureSpan {
+    color: #777;
+    font-weight: bold;
+}
+</style>
+<h1>api documentation for
+    <a href="https://github.com/MatAtBread/fast-async#readme">fast-async (v6.2.2)</a>
+</h1>
+<h4>fast-async/await transformer Babel plugin</h4>
+<div class="apidocSectionDiv"><a href="#apidoc.tableOfContents" id="apidoc.tableOfContents"><h1>table of contents</h1></a><ol>
+
+    <li class="apidocModuleLi"><a href="#apidoc.module.fast-async">module fast-async</a><ol>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.fast-async.fast-async">
+            function <span class="apidocSignatureSpan"></span>fast-async
+            <span class="apidocSignatureSpan">(babel)</span>
+            </a>
+
+        </li>
+
+    </ol></li>
+
+</ol></div>
+
+<div class="apidocSectionDiv">
+<h1><a href="#apidoc.module.fast-async" id="apidoc.module.fast-async">module fast-async</a></h1>
+
+
+    <h2>
+        <a href="#apidoc.element.fast-async.fast-async" id="apidoc.element.fast-async.fast-async">
+        function <span class="apidocSignatureSpan"></span>fast-async
+        <span class="apidocSignatureSpan">(babel)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">fast-async = function (babel) {
+    var logger = console.log.bind(console);
+    var nodent = require('nodent');
+    var compiler = null;
+    var compilerOpts = {};
+    var shouldIncludeRuntime = false;
+    var defaultEnv = {
+        log:logger,
+        dontInstallRequireHook:true,
+        dontMapStackTraces:true,
+        extension:null
+    };
+
+    function getRuntime(symbol, fn, opts, compiler) {
+        var runtime = symbol + '=' + fn.toString().replace(/[\s]+/g, ' ') + ';\n';
+        opts.parser.ranges = false;
+        opts.parser.locations = false;
+        // Use babel rather than nodent (acorn) as babel's AST is not ESTree compliant
+        var ast = babel.transform(runtime).ast.program.body[0];
+        // Remove location information from the runtime as Babel &gt;=6.5.0 does a search by
+        // location and barfs if multiple nodes apparently occupy the same source locations
+        ast = JSON.parse(JSON.stringify(ast, function replacer(key, value) {
+            return (key === 'start' || key === 'end' ? undefined : value);
+        }));
+        return ast;
+    }
+
+    return {
+        // Lifted from https://github.com/babel/babel/blob/master/packages/babel-plugin-syntax-async-functions/src/index.js#L3,
+        // which is not nice, but avoids installation complexity with plugins (which I must try to work out sometime)
+        manipulateOptions: function manipulateOptions(opts, parserOpts) {
+            parserOpts.plugins.push('asyncFunctions');
+        },
+
+        visitor: {
+            Program: {
+                enter: function(path, state){
+                    shouldIncludeRuntime = false;
+                },
+                exit: function (path, state) {
+                    // Check if there was an async or await keyword before bothering to process the AST
+                    if (!shouldIncludeRuntime)
+                        return ;
+
+                    state.opts = state.opts || {} ;
+                    var envOpts = state.opts.env || {};
+                    Object.keys(defaultEnv).forEach(function(k){
+                        if (!(k in envOpts))
+                            envOpts[k] = defaultEnv[k] ;
+                    }) ;
+
+                    compiler = nodent(envOpts);
+                    compilerOpts = compiler.parseCompilerOptions('"use nodent-promises";', compiler.log);
+
+                    var defCompilerOpts = state.opts.compiler ;
+                    if (state.opts.spec) {
+                        defCompilerOpts = {
+                            promises:true,
+                            wrapAwait:true,
+                            noRuntime:true
+                        }
+                    }
+
+                    if (defCompilerOpts &amp;&amp; typeof defCompilerOpts==="object") {
+                        Object.keys(defCompilerOpts).forEach(function(k){
+                            compilerOpts[k] = defCompilerOpts[k] ;
+                        }) ;
+                    }
+                    compilerOpts.babelTree = true;
+                    compilerOpts.parser.noNodentExtensions = true ;
+
+                    var pr = { origCode: state.file.code, filename: '', ast: path.node };
+                    compiler.asynchronize(pr, undefined, compilerOpts, compiler.log);
+
+                    var runtime ;
+                    if (!compilerOpts.noRuntime) {
+                        if (compilerOpts.generators) {
+                            runtime = getRuntime('Function.prototype.$asyncspawn', Function.prototype.$asyncspawn, compilerOpts,
+compiler);
+                        } else {
+                            runtime = getRuntime('Function.prototype.$asyncbind', Function.prototype.$asyncbind, compilerOpts, compiler
+);
+                        }
+
+                        if (state.opts.useRuntimeModule) {
+                            state.addImport(state.opts.useRuntimeModule === true ? 'nodent-runtime' : state.opts.useRuntimeModule
+, 'default');
+                        }
+                        else if (!state.opts.runtimePattern) {
+                            path.unshiftCo ...</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+</div>
+
+<div class="apidocFooterDiv">
+    [ this document was created with
+    <a href="https://github.com/kaizhu256/node-utility2" target="_blank">utility2</a>
+    ]
+</div>
+</div>
+</body></html>
